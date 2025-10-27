@@ -533,18 +533,44 @@ Always format your entire response in Markdown - no exceptions. Make it visually
               }
             }
 
-            // Save messages (user + bot)
+            // Save messages (user + bot) - only if not already in database
             if (allowSave && chatId) {
-              await saveMessage({
-                ...userMessage,
-                chatId,
-                title: currentChatSnapshot?.title || chat.title,
-              }).catch(() => null);
-              await saveMessage({
-                ...botMessage,
-                chatId,
-                title: currentChatSnapshot?.title || chat.title,
-              }).catch(() => null);
+              // Check if these messages already exist to prevent duplicates
+              const existingMessages = await getMessages({ chatId }).catch(
+                () => []
+              );
+              const userExists = existingMessages.some(
+                (m) =>
+                  m.role === "user" &&
+                  m.text === userMessage.text &&
+                  Math.abs(
+                    new Date(m.timestamp) - new Date(userMessage.timestamp)
+                  ) < 5000
+              );
+              const botExists = existingMessages.some(
+                (m) =>
+                  m.role === "bot" &&
+                  m.text === botMessage.text &&
+                  Math.abs(
+                    new Date(m.timestamp) - new Date(botMessage.timestamp)
+                  ) < 5000
+              );
+
+              if (!userExists) {
+                await saveMessage({
+                  ...userMessage,
+                  chatId,
+                  title: currentChatSnapshot?.title || chat.title,
+                }).catch(() => null);
+              }
+
+              if (!botExists) {
+                await saveMessage({
+                  ...botMessage,
+                  chatId,
+                  title: currentChatSnapshot?.title || chat.title,
+                }).catch(() => null);
+              }
             }
 
             // Generate title if needed using the snapshot messages
