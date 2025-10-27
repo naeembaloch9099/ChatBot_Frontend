@@ -64,6 +64,8 @@ export default function ChatPage() {
           localStorage.removeItem("isAuthenticated");
           localStorage.removeItem("userName");
           localStorage.removeItem("userEmail");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
           showToast({
             message: "Session expired. Please login again.",
             type: "error",

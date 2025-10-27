@@ -43,6 +43,13 @@ export default function Login() {
             (data.user && (data.user.name || data.user.email?.split("@")[0])) ||
               ""
           );
+          // Store tokens for cross-origin API calls
+          if (data.accessToken) {
+            localStorage.setItem("accessToken", data.accessToken);
+          }
+          if (data.refreshToken) {
+            localStorage.setItem("refreshToken", data.refreshToken);
+          }
           console.log("[Login] success payload:", data);
           navigate("/chat");
           showToast({ message: "Logged in", type: "success", duration: 2000 });

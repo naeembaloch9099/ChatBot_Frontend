@@ -29,6 +29,16 @@ function resolveBackend() {
   return backend;
 }
 
+// Helper to get auth headers with token
+function getAuthHeaders(additionalHeaders = {}) {
+  const token = localStorage.getItem("accessToken");
+  const headers = { ...additionalHeaders };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export async function getGeminiResponse({ systemPrompt, conversation }) {
   // Use a relative URL in dev so Vite dev-server middleware/proxy handles /api/* routes
   // resolveBackend() will rewrite localhost to the current LAN host when needed.
@@ -39,7 +49,7 @@ export async function getGeminiResponse({ systemPrompt, conversation }) {
   );
   const res = await fetch(`${BACKEND}/api/gemini`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
     credentials: "include",
     body: JSON.stringify({ systemPrompt, conversation }),
   });
@@ -59,7 +69,7 @@ export async function getGeminiResponse({ systemPrompt, conversation }) {
 export async function saveMessage(message) {
   const BACKEND = resolveBackend();
   try {
-    const headers = { "Content-Type": "application/json" };
+    const headers = getAuthHeaders({ "Content-Type": "application/json" });
     const res = await fetch(`${BACKEND}/api/messages`, {
       method: "POST",
       headers,
@@ -84,6 +94,7 @@ export async function getMessages({ chatId, limit = 100 } = {}) {
   if (chatId) params.set("chatId", chatId);
   params.set("limit", String(limit));
   const res = await fetch(`${BACKEND}/api/messages?${params.toString()}`, {
+    headers: getAuthHeaders(),
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to fetch messages");
@@ -102,7 +113,10 @@ export async function getLatestMessageForChat(chatId) {
 
 export async function getChats() {
   const BACKEND = resolveBackend();
-  const res = await fetch(`${BACKEND}/api/chats`, { credentials: "include" });
+  const res = await fetch(`${BACKEND}/api/chats`, {
+    headers: getAuthHeaders(),
+    credentials: "include",
+  });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     console.error("[api client] getChats failed:", data);
@@ -120,6 +134,7 @@ export async function askWithFiles({ question, files = [] } = {}) {
   }
   const res = await fetch(`${BACKEND}/api/ask-with-files`, {
     method: "POST",
+    headers: getAuthHeaders(), // Don't set Content-Type for FormData
     credentials: "include",
     body: fd,
   });
@@ -134,7 +149,7 @@ export async function askWithFiles({ question, files = [] } = {}) {
 export async function createChat({ title } = {}) {
   const BACKEND = resolveBackend();
   try {
-    const headers = { "Content-Type": "application/json" };
+    const headers = getAuthHeaders({ "Content-Type": "application/json" });
     const res = await fetch(`${BACKEND}/api/chats`, {
       method: "POST",
       headers,
@@ -160,6 +175,7 @@ export async function deleteChat(chatId) {
       `${BACKEND}/api/chats/${encodeURIComponent(chatId)}`,
       {
         method: "DELETE",
+        headers: getAuthHeaders(),
         credentials: "include",
       }
     );
@@ -178,7 +194,7 @@ export async function deleteChat(chatId) {
 export async function updateChat(chatId, { title } = {}) {
   const BACKEND = resolveBackend();
   try {
-    const headers = { "Content-Type": "application/json" };
+    const headers = getAuthHeaders({ "Content-Type": "application/json" });
     const res = await fetch(
       `${BACKEND}/api/chats/${encodeURIComponent(chatId)}`,
       {
@@ -204,6 +220,7 @@ export async function checkAuthStatus() {
   const BACKEND = resolveBackend();
   try {
     const res = await fetch(`${BACKEND}/api/auth/me`, {
+      headers: getAuthHeaders(),
       credentials: "include",
     });
     if (!res.ok) {
