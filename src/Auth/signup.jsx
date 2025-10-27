@@ -53,7 +53,7 @@ export default function Signup() {
     // call backend to request OTP (use relative path in dev so Vite proxy handles it)
     const BACKEND = import.meta.env.DEV
       ? ""
-      : import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+      : import.meta.env.VITE_BACKEND_URL || "";
     fetch(`${BACKEND}/api/auth/send-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -178,7 +178,7 @@ export default function Signup() {
     setError("");
     const BACKEND = import.meta.env.DEV
       ? ""
-      : import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+      : import.meta.env.VITE_BACKEND_URL || "https://chatbotserver-production-6d4b.up.railway.app";
     fetch(`${BACKEND}/api/auth/verify-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

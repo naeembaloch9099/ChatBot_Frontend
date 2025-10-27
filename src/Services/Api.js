@@ -5,7 +5,8 @@
 // client's localhost (which would be the phone/tablet).
 function resolveBackend() {
   const envUrl = import.meta.env.VITE_BACKEND_URL ?? null;
-  let backend = envUrl ?? "http://localhost:8080";
+  let backend =
+    envUrl ?? "https://chatbotserver-production-6d4b.up.railway.app";
 
   if (envUrl && typeof window !== "undefined") {
     try {

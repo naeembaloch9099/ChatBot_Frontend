@@ -11,7 +11,7 @@ export default function Login() {
     e.preventDefault();
     const BACKEND = import.meta.env.DEV
       ? ""
-      : import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+      : import.meta.env.VITE_BACKEND_URL || "";
     fetch(`${BACKEND}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
