@@ -238,6 +238,102 @@ export default function ChatPage() {
     setSidebarOpen(false);
   };
 
+  // Handle edit message
+  const handleEditMessage = (messageIndex) => {
+    const chat = chats[current];
+    if (!chat || !chat.messages[messageIndex]) return;
+
+    const message = chat.messages[messageIndex];
+    if (message.role !== "user") return; // Only allow editing user messages
+
+    // Set the text in input (you'll need to expose this via a ref or callback)
+    const text = message.text;
+
+    // Delete this message and all messages after it
+    setChats((prev) =>
+      prev.map((c, i) =>
+        i === current
+          ? { ...c, messages: c.messages.slice(0, messageIndex) }
+          : c
+      )
+    );
+
+    // Trigger input population (we'll need to add this to ChatInput)
+    if (window.chatInputRef && window.chatInputRef.current) {
+      window.chatInputRef.current.value = text;
+      window.chatInputRef.current.focus();
+    }
+
+    showToast({ message: "Message loaded for editing", type: "info" });
+  };
+
+  // Handle regenerate message
+  const handleRegenerateMessage = async (messageIndex) => {
+    const chat = chats[current];
+    if (!chat || !chat.messages[messageIndex]) return;
+
+    const message = chat.messages[messageIndex];
+    if (message.role !== "bot") return; // Only regenerate bot messages
+
+    // Find the previous user message
+    let userMessageIndex = messageIndex - 1;
+    while (
+      userMessageIndex >= 0 &&
+      chat.messages[userMessageIndex].role !== "user"
+    ) {
+      userMessageIndex--;
+    }
+
+    if (userMessageIndex < 0) {
+      showToast({
+        message: "Cannot find user message to regenerate",
+        type: "error",
+      });
+      return;
+    }
+
+    const userMessage = chat.messages[userMessageIndex];
+
+    // Delete the bot message and all after it
+    setChats((prev) =>
+      prev.map((c, i) =>
+        i === current
+          ? { ...c, messages: c.messages.slice(0, messageIndex) }
+          : c
+      )
+    );
+
+    // Resend the user message to get a new response
+    showToast({ message: "Regenerating response...", type: "info" });
+    await handleSend(userMessage.text, userMessage.files || []);
+  };
+
+  // Handle delete message
+  const handleDeleteMessage = (messageIndex) => {
+    const chat = chats[current];
+    if (!chat || !chat.messages[messageIndex]) return;
+
+    // Confirm deletion
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this message and all messages after it?"
+      )
+    ) {
+      return;
+    }
+
+    // Delete this message and all after it
+    setChats((prev) =>
+      prev.map((c, i) =>
+        i === current
+          ? { ...c, messages: c.messages.slice(0, messageIndex) }
+          : c
+      )
+    );
+
+    showToast({ message: "Message deleted", type: "success" });
+  };
+
   // Handle files selected from the ChatInput upload button.
   const handleFilesSelected = (files) => {
     if (!files || files.length === 0) return;
@@ -338,7 +434,7 @@ export default function ChatPage() {
   };
 
   const handleSend = useCallback(
-    async (text) => {
+    async (text, filesFromParam = null) => {
       console.log("🚀 [handleSend] Starting with text:", text);
       console.log("🚀 [handleSend] Current loading state:", loading);
       console.log("🚀 [handleSend] Current chat:", current, chats[current]);
@@ -361,14 +457,16 @@ export default function ChatPage() {
         return;
       }
 
+      // Use files from parameter or from attachments state
+      const filesToUse = filesFromParam !== null ? filesFromParam : attachments;
       // Create user message (include a small unique id so React can reliably
       // reconcile message list updates and show new messages immediately)
       const userMessage = {
         id: String(Date.now()) + "-u-" + Math.random().toString(36).slice(2, 8),
         role: "user",
         text: text.trim(),
-        ...(attachments?.length && {
-          files: attachments.map((a) => ({
+        ...(filesToUse?.length && {
+          files: filesToUse.map((a) => ({
             name: a.name,
             type: a.type,
             size: a.size,
@@ -457,8 +555,8 @@ Always format your entire response in Markdown - no exceptions. Make it visually
         console.log("🤖 [handleSend] Getting bot response...");
         console.log("🤖 [handleSend] Conversation sent to API:", conversation);
         let botReply;
-        if (attachments?.length > 0) {
-          const files = attachments.map((a) => a.file);
+        if (filesToUse?.length > 0) {
+          const files = filesToUse.map((a) => a.file);
           console.log(
             "📎 [handleSend] Sending files:",
             attachments.map((a) => `${a.name} (${a.type})`).join(", ")
@@ -783,6 +881,9 @@ Always format your entire response in Markdown - no exceptions. Make it visually
               <ChatBox
                 messages={chats[current]?.messages || []}
                 loading={loading}
+                onEditMessage={handleEditMessage}
+                onRegenerateMessage={handleRegenerateMessage}
+                onDeleteMessage={handleDeleteMessage}
               />
             </div>
           </div>

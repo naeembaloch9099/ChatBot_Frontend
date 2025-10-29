@@ -5,6 +5,11 @@ import {
   FaFileAlt,
   FaUser,
   FaRobot,
+  FaCopy,
+  FaCheck,
+  FaEdit,
+  FaRedo,
+  FaTrash,
 } from "react-icons/fa";
 import MarkdownRenderer from "./MarkdownRenderer";
 
@@ -14,10 +19,47 @@ export default function MessageBubble({
   files = [],
   isTyping = false,
   onTypingComplete = null,
+  onEdit = null,
+  onRegenerate = null,
+  onDelete = null,
+  messageIndex = null,
 }) {
   const isUser = role === "user";
   const [displayText, setDisplayText] = useState(isUser ? text : "");
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [copied, setCopied] = useState(false);
+
+  // Copy to clipboard
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  // Edit message
+  const handleEdit = () => {
+    if (onEdit && messageIndex !== null) {
+      onEdit(messageIndex);
+    }
+  };
+
+  // Regenerate response
+  const handleRegenerate = () => {
+    if (onRegenerate && messageIndex !== null) {
+      onRegenerate(messageIndex);
+    }
+  };
+
+  // Delete message
+  const handleDelete = () => {
+    if (onDelete && messageIndex !== null) {
+      onDelete(messageIndex);
+    }
+  };
 
   // Typing animation for bot messages
   useEffect(() => {
@@ -144,6 +186,74 @@ export default function MessageBubble({
               </div>
             )}
           </div>
+
+          {/* Action Buttons - Show below bot messages or user messages */}
+          {!isTyping && (
+            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-200/50">
+              {/* Copy Button */}
+              <button
+                onClick={handleCopy}
+                className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
+                  isUser
+                    ? "text-blue-100 hover:bg-blue-500/30"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+                title="Copy message"
+              >
+                {copied ? (
+                  <>
+                    <FaCheck size={12} />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <FaCopy size={12} />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+
+              {/* Edit Button (for user messages) */}
+              {isUser && onEdit && (
+                <button
+                  onClick={handleEdit}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs text-blue-100 hover:bg-blue-500/30 transition-colors"
+                  title="Edit and resend"
+                >
+                  <FaEdit size={12} />
+                  <span>Edit</span>
+                </button>
+              )}
+
+              {/* Regenerate Button (for bot messages) */}
+              {!isUser && onRegenerate && (
+                <button
+                  onClick={handleRegenerate}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs text-gray-600 hover:bg-gray-100 transition-colors"
+                  title="Regenerate response"
+                >
+                  <FaRedo size={12} />
+                  <span>Regenerate</span>
+                </button>
+              )}
+
+              {/* Delete Button */}
+              {onDelete && (
+                <button
+                  onClick={handleDelete}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
+                    isUser
+                      ? "text-red-200 hover:bg-red-500/30"
+                      : "text-red-600 hover:bg-red-50"
+                  }`}
+                  title="Delete message"
+                >
+                  <FaTrash size={12} />
+                  <span>Delete</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

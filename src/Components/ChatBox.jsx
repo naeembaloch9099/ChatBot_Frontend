@@ -6,6 +6,9 @@ export default function ChatBox({
   messages = [],
   loading = false,
   onMessageComplete = null,
+  onEditMessage = null,
+  onRegenerateMessage = null,
+  onDeleteMessage = null,
 }) {
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
@@ -89,6 +92,10 @@ export default function ChatBox({
             files={m.files || []}
             isTyping={typingMessageIndex === i}
             onTypingComplete={() => handleTypingComplete(i)}
+            onEdit={onEditMessage}
+            onRegenerate={onRegenerateMessage}
+            onDelete={onDeleteMessage}
+            messageIndex={i}
           />
         ))}
 
