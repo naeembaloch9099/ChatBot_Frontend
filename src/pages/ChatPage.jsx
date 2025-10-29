@@ -155,14 +155,17 @@ export default function ChatPage() {
   }, []);
 
   // Helper: decide whether a chat should be saved to the server.
-  const shouldSave = (chat) => {
-    // explicit per-chat "saved: false" prevents saving
-    if (chat && chat.saved === false) return false;
-    // global temporary mode for authenticated users prevents saving
-    if (user && temporaryNoSave) return false;
-    // otherwise, allow saving
-    return true;
-  };
+  const shouldSave = useCallback(
+    (chat) => {
+      // explicit per-chat "saved: false" prevents saving
+      if (chat && chat.saved === false) return false;
+      // global temporary mode for authenticated users prevents saving
+      if (user && temporaryNoSave) return false;
+      // otherwise, allow saving
+      return true;
+    },
+    [user, temporaryNoSave]
+  );
 
   const selectChat = async (index) => {
     setCurrent(index);
@@ -625,7 +628,6 @@ Always format your entire response in Markdown - no exceptions. Make it visually
       attachments,
       deriveTitleFromMessages,
       shouldSave,
-      temporaryNoSave,
     ]
   );
 
