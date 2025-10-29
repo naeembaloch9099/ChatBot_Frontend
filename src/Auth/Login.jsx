@@ -1,11 +1,69 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { showToast } from "../Services/Toast";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const BACKEND = import.meta.env.DEV
+        ? ""
+        : import.meta.env.VITE_BACKEND_URL || "";
+
+      const response = await fetch(`${BACKEND}/api/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.ok) {
+        localStorage.setItem("isAuthenticated", "1");
+        if (data.user && data.user.email)
+          localStorage.setItem("userEmail", data.user.email);
+        localStorage.setItem("userName", data.user.name || "");
+        if (data.accessToken) {
+          localStorage.setItem("accessToken", data.accessToken);
+        }
+        if (data.refreshToken) {
+          localStorage.setItem("refreshToken", data.refreshToken);
+        }
+        console.log("[Google Login] success:", data);
+        navigate("/chat");
+        showToast({
+          message: "Logged in with Google",
+          type: "success",
+          duration: 2000,
+        });
+      } else {
+        console.error("[Google Login] failure:", data);
+        showToast({
+          message: data.error || "Google login failed",
+          type: "error",
+        });
+      }
+    } catch (err) {
+      console.error("Google login error:", err);
+      showToast({
+        message: "Google login failed. Please try again.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.error("Google login error");
+    showToast({
+      message: "Google login failed",
+      type: "error",
+    });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -105,6 +163,33 @@ export default function Login() {
               Log in
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          {/* Google Sign-In */}
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              useOneTap
+              theme="outline"
+              size="large"
+              text="signin_with"
+              shape="rectangular"
+              width="100%"
+            />
+          </div>
+
           <div className="mt-4 text-center text-sm">
             Don't have an account?{" "}
             <Link to="/signup" className="text-sky-600">

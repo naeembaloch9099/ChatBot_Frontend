@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { FaGoogle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { showToast } from "../Services/Toast";
+import { GoogleLogin } from "@react-oauth/google";
 
 // Simple client-side OTP signup flow (simulation).
 // On submit: generate OTP, "send" it (console.log) and show OTP input.
@@ -26,6 +27,63 @@ export default function Signup() {
   });
   const [resendTimer, setResendTimer] = useState(0);
   const timerRef = useRef(null);
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const BACKEND = import.meta.env.DEV
+        ? ""
+        : import.meta.env.VITE_BACKEND_URL || "";
+
+      const response = await fetch(`${BACKEND}/api/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.ok) {
+        localStorage.setItem("isAuthenticated", "1");
+        if (data.user && data.user.email)
+          localStorage.setItem("userEmail", data.user.email);
+        localStorage.setItem("userName", data.user.name || "");
+        if (data.accessToken) {
+          localStorage.setItem("accessToken", data.accessToken);
+        }
+        if (data.refreshToken) {
+          localStorage.setItem("refreshToken", data.refreshToken);
+        }
+        console.log("[Google Signup] success:", data);
+        navigate("/chat");
+        showToast({
+          message: "Signed up with Google",
+          type: "success",
+          duration: 2000,
+        });
+      } else {
+        console.error("[Google Signup] failure:", data);
+        showToast({
+          message: data.error || "Google signup failed",
+          type: "error",
+        });
+      }
+    } catch (err) {
+      console.error("Google signup error:", err);
+      showToast({
+        message: "Google signup failed. Please try again.",
+        type: "error",
+      });
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.error("Google signup error");
+    showToast({
+      message: "Google signup failed",
+      type: "error",
+    });
+  };
 
   useEffect(() => {
     // countdown timer for resend; when resendTimer > 0 start interval to decrement every second
@@ -178,7 +236,8 @@ export default function Signup() {
     setError("");
     const BACKEND = import.meta.env.DEV
       ? ""
-      : import.meta.env.VITE_BACKEND_URL || "https://chatbotserver-production-6d4b.up.railway.app";
+      : import.meta.env.VITE_BACKEND_URL ||
+        "https://chatbotserver-production-6d4b.up.railway.app";
     fetch(`${BACKEND}/api/auth/verify-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -367,13 +426,18 @@ export default function Signup() {
             <div className="flex-1 h-px bg-slate-100" />
           </div>
 
-          <button
-            className="w-full flex items-center justify-center gap-3 py-3 border rounded-xl hover:shadow-md transition"
-            aria-label="Continue with Google"
-          >
-            <FaGoogle className="text-red-500" />
-            <span className="text-sm font-medium">Continue with Google</span>
-          </button>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              useOneTap={false}
+              theme="outline"
+              size="large"
+              text="signup_with"
+              shape="rectangular"
+              width="100%"
+            />
+          </div>
 
           <div className="mt-6 text-center text-sm text-slate-500">
             Already have an account?{" "}
