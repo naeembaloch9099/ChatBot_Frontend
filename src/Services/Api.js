@@ -39,6 +39,72 @@ function getAuthHeaders(additionalHeaders = {}) {
   return headers;
 }
 
+// Helper to refresh the access token
+async function refreshAccessToken() {
+  const BACKEND = resolveBackend();
+  const refreshToken = localStorage.getItem("refreshToken");
+
+  if (!refreshToken) {
+    console.log("[api client] No refresh token available");
+    return false;
+  }
+
+  try {
+    const res = await fetch(`${BACKEND}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!res.ok) {
+      console.log("[api client] Failed to refresh token");
+      // Clear invalid tokens
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("isAuthenticated");
+      return false;
+    }
+
+    const data = await res.json();
+    if (data.accessToken) {
+      localStorage.setItem("accessToken", data.accessToken);
+      console.log("[api client] Access token refreshed successfully");
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("[api client] refreshAccessToken error:", err);
+    return false;
+  }
+}
+
+// Helper to make authenticated fetch with auto token refresh
+async function authenticatedFetch(url, options = {}) {
+  let res = await fetch(url, options);
+
+  // If 401, try to refresh token and retry once
+  if (res.status === 401) {
+    console.log("[api client] Got 401, attempting to refresh token...");
+    const refreshed = await refreshAccessToken();
+
+    if (refreshed) {
+      // Update headers with new token and retry
+      const newHeaders = {
+        ...options.headers,
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      };
+      res = await fetch(url, { ...options, headers: newHeaders });
+    } else {
+      // Refresh failed, redirect to login
+      console.log("[api client] Token refresh failed, redirecting to login");
+      window.location.href = "/";
+    }
+  }
+
+  return res;
+}
+
 export async function getGeminiResponse({ systemPrompt, conversation }) {
   // Use a relative URL in dev so Vite dev-server middleware/proxy handles /api/* routes
   // resolveBackend() will rewrite localhost to the current LAN host when needed.
@@ -47,7 +113,7 @@ export async function getGeminiResponse({ systemPrompt, conversation }) {
     "[api client] Forwarding prompt to backend",
     BACKEND || "(relative) /api/gemini"
   );
-  const res = await fetch(`${BACKEND}/api/gemini`, {
+  const res = await authenticatedFetch(`${BACKEND}/api/gemini`, {
     method: "POST",
     headers: getAuthHeaders({ "Content-Type": "application/json" }),
     credentials: "include",
@@ -70,7 +136,7 @@ export async function saveMessage(message) {
   const BACKEND = resolveBackend();
   try {
     const headers = getAuthHeaders({ "Content-Type": "application/json" });
-    const res = await fetch(`${BACKEND}/api/messages`, {
+    const res = await authenticatedFetch(`${BACKEND}/api/messages`, {
       method: "POST",
       headers,
       credentials: "include",
@@ -93,10 +159,13 @@ export async function getMessages({ chatId, limit = 100 } = {}) {
   const params = new URLSearchParams();
   if (chatId) params.set("chatId", chatId);
   params.set("limit", String(limit));
-  const res = await fetch(`${BACKEND}/api/messages?${params.toString()}`, {
-    headers: getAuthHeaders(),
-    credentials: "include",
-  });
+  const res = await authenticatedFetch(
+    `${BACKEND}/api/messages?${params.toString()}`,
+    {
+      headers: getAuthHeaders(),
+      credentials: "include",
+    }
+  );
   if (!res.ok) throw new Error("Failed to fetch messages");
   return res.json();
 }
@@ -113,7 +182,7 @@ export async function getLatestMessageForChat(chatId) {
 
 export async function getChats() {
   const BACKEND = resolveBackend();
-  const res = await fetch(`${BACKEND}/api/chats`, {
+  const res = await authenticatedFetch(`${BACKEND}/api/chats`, {
     headers: getAuthHeaders(),
     credentials: "include",
   });
@@ -132,7 +201,7 @@ export async function askWithFiles({ question, files = [] } = {}) {
   for (const f of files) {
     fd.append("files", f, f.name);
   }
-  const res = await fetch(`${BACKEND}/api/ask-with-files`, {
+  const res = await authenticatedFetch(`${BACKEND}/api/ask-with-files`, {
     method: "POST",
     headers: getAuthHeaders(), // Don't set Content-Type for FormData
     credentials: "include",
@@ -150,7 +219,7 @@ export async function createChat({ title } = {}) {
   const BACKEND = resolveBackend();
   try {
     const headers = getAuthHeaders({ "Content-Type": "application/json" });
-    const res = await fetch(`${BACKEND}/api/chats`, {
+    const res = await authenticatedFetch(`${BACKEND}/api/chats`, {
       method: "POST",
       headers,
       credentials: "include",
@@ -171,7 +240,7 @@ export async function createChat({ title } = {}) {
 export async function deleteChat(chatId) {
   const BACKEND = resolveBackend();
   try {
-    const res = await fetch(
+    const res = await authenticatedFetch(
       `${BACKEND}/api/chats/${encodeURIComponent(chatId)}`,
       {
         method: "DELETE",
@@ -195,7 +264,7 @@ export async function updateChat(chatId, { title } = {}) {
   const BACKEND = resolveBackend();
   try {
     const headers = getAuthHeaders({ "Content-Type": "application/json" });
-    const res = await fetch(
+    const res = await authenticatedFetch(
       `${BACKEND}/api/chats/${encodeURIComponent(chatId)}`,
       {
         method: "PATCH",
@@ -219,7 +288,7 @@ export async function updateChat(chatId, { title } = {}) {
 export async function checkAuthStatus() {
   const BACKEND = resolveBackend();
   try {
-    const res = await fetch(`${BACKEND}/api/auth/me`, {
+    const res = await authenticatedFetch(`${BACKEND}/api/auth/me`, {
       headers: getAuthHeaders(),
       credentials: "include",
     });

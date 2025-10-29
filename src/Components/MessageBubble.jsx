@@ -23,11 +23,14 @@ export default function MessageBubble({
   onRegenerate = null,
   onDelete = null,
   messageIndex = null,
+  isRegenerating = false,
 }) {
   const isUser = role === "user";
   const [displayText, setDisplayText] = useState(isUser ? text : "");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedText, setEditedText] = useState(text);
 
   // Copy to clipboard
   const handleCopy = async () => {
@@ -40,10 +43,23 @@ export default function MessageBubble({
     }
   };
 
-  // Edit message
+  // Start editing
   const handleEdit = () => {
-    if (onEdit && messageIndex !== null) {
-      onEdit(messageIndex);
+    setIsEditing(true);
+    setEditedText(text);
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedText(text);
+  };
+
+  // Save edited message
+  const handleSaveEdit = () => {
+    if (editedText.trim() && onEdit && messageIndex !== null) {
+      setIsEditing(false);
+      onEdit(messageIndex, editedText.trim());
     }
   };
 
@@ -168,27 +184,73 @@ export default function MessageBubble({
 
           {/* Message Text */}
           <div className="message-content break-words overflow-hidden">
-            {isUser ? (
+            {isEditing ? (
+              // Inline editing mode
+              <div className="space-y-2">
+                <textarea
+                  value={editedText}
+                  onChange={(e) => setEditedText(e.target.value)}
+                  className={`w-full p-3 border-2 rounded-lg focus:outline-none focus:ring-2 text-sm sm:text-base resize-none ${
+                    isUser
+                      ? "bg-blue-500 border-blue-400 text-white placeholder-blue-200 focus:ring-blue-300"
+                      : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500"
+                  }`}
+                  rows={Math.max(
+                    3,
+                    Math.min(10, editedText.split("\n").length + 1)
+                  )}
+                  autoFocus
+                  placeholder="Type your message..."
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveEdit}
+                    className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                      isUser
+                        ? "bg-white text-blue-600 hover:bg-blue-50"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    Save & Resend
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="px-3 py-1.5 bg-gray-300 text-gray-700 rounded text-xs font-medium hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : isUser ? (
               <div className="whitespace-pre-wrap text-white leading-relaxed text-sm sm:text-base">
                 {text}
               </div>
             ) : (
               <div className="text-gray-800 leading-relaxed text-sm sm:text-base">
-                <MarkdownRenderer
-                  content={displayText}
-                  isTyping={isTyping && currentIndex < text.length}
-                />
-                {isTyping && currentIndex < text.length && (
-                  <span className="inline-block w-2 h-5 bg-gray-400 ml-1 animate-pulse">
-                    |
-                  </span>
+                {isRegenerating ? (
+                  <div className="flex items-center gap-2 text-gray-500 italic">
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                    <span>Regenerating response...</span>
+                  </div>
+                ) : (
+                  <>
+                    <MarkdownRenderer
+                      content={displayText}
+                      isTyping={isTyping && currentIndex < text.length}
+                    />
+                    {isTyping && currentIndex < text.length && (
+                      <span className="inline-block w-2 h-5 bg-gray-400 ml-1 animate-pulse">
+                        |
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             )}
           </div>
 
           {/* Action Buttons - Show below bot messages or user messages */}
-          {!isTyping && (
+          {!isTyping && !isEditing && (
             <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-200/50">
               {/* Copy Button */}
               <button

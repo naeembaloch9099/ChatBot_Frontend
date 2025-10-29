@@ -9,6 +9,7 @@ export default function ChatBox({
   onEditMessage = null,
   onRegenerateMessage = null,
   onDeleteMessage = null,
+  regeneratingIndex = null,
 }) {
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
@@ -96,6 +97,7 @@ export default function ChatBox({
             onRegenerate={onRegenerateMessage}
             onDelete={onDeleteMessage}
             messageIndex={i}
+            isRegenerating={i === regeneratingIndex}
           />
         ))}
 

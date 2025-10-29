@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { FaFilePdf, FaFileImage, FaFileAlt, FaTimes } from "react-icons/fa";
 import { FaBars } from "react-icons/fa";
 import ChatList from "../Components/ChatList";
@@ -18,6 +18,9 @@ import {
 import { showToast } from "../Services/Toast";
 
 export default function ChatPage() {
+  // Ref for ChatInput to control it from parent
+  const chatInputRef = useRef(null);
+
   // All state hooks at the top to avoid 'not defined' errors
   const [user, setUser] = useState(() => {
     const name = localStorage.getItem("userName");
@@ -27,6 +30,7 @@ export default function ChatPage() {
   const [chats, setChats] = useState([]);
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [regeneratingIndex, setRegeneratingIndex] = useState(null);
   const [attachments, setAttachments] = useState([]); // {id,file,name,sizeLabel,url,progress,status,type}
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [temporaryNoSave, setTemporaryNoSave] = useState(() => {
@@ -238,16 +242,15 @@ export default function ChatPage() {
     setSidebarOpen(false);
   };
 
-  // Handle edit message
-  const handleEditMessage = (messageIndex) => {
+  // Handle edit message - now with edited text parameter
+  const handleEditMessage = async (messageIndex, editedText) => {
     const chat = chats[current];
     if (!chat || !chat.messages[messageIndex]) return;
 
     const message = chat.messages[messageIndex];
     if (message.role !== "user") return; // Only allow editing user messages
 
-    // Set the text in input (you'll need to expose this via a ref or callback)
-    const text = message.text;
+    const messageFiles = message.files || [];
 
     // Delete this message and all messages after it
     setChats((prev) =>
@@ -258,13 +261,23 @@ export default function ChatPage() {
       )
     );
 
-    // Trigger input population (we'll need to add this to ChatInput)
-    if (window.chatInputRef && window.chatInputRef.current) {
-      window.chatInputRef.current.value = text;
-      window.chatInputRef.current.focus();
+    // Restore attachments if any
+    if (messageFiles.length > 0) {
+      const restoredAttachments = messageFiles.map((f, idx) => ({
+        id: Date.now() + idx,
+        name: f.name,
+        type: f.type,
+        size: f.size,
+        url: f.url,
+        status: "uploaded",
+        progress: 100,
+      }));
+      setAttachments(restoredAttachments);
     }
 
-    showToast({ message: "Message loaded for editing", type: "info" });
+    // Immediately resend with the edited text
+    showToast({ message: "Sending edited message...", type: "info" });
+    await handleSend(editedText, messageFiles);
   };
 
   // Handle regenerate message
@@ -294,6 +307,9 @@ export default function ChatPage() {
 
     const userMessage = chat.messages[userMessageIndex];
 
+    // Set regenerating state
+    setRegeneratingIndex(messageIndex);
+
     // Delete the bot message and all after it
     setChats((prev) =>
       prev.map((c, i) =>
@@ -306,6 +322,9 @@ export default function ChatPage() {
     // Resend the user message to get a new response
     showToast({ message: "Regenerating response...", type: "info" });
     await handleSend(userMessage.text, userMessage.files || []);
+
+    // Clear regenerating state
+    setRegeneratingIndex(null);
   };
 
   // Handle delete message
@@ -884,6 +903,7 @@ Always format your entire response in Markdown - no exceptions. Make it visually
                 onEditMessage={handleEditMessage}
                 onRegenerateMessage={handleRegenerateMessage}
                 onDeleteMessage={handleDeleteMessage}
+                regeneratingIndex={regeneratingIndex}
               />
             </div>
           </div>
@@ -965,6 +985,7 @@ Always format your entire response in Markdown - no exceptions. Make it visually
 
             <div className="h-16 flex items-center">
               <ChatInput
+                ref={chatInputRef}
                 onSend={handleSend}
                 onFilesSelected={handleFilesSelected}
                 showUpload={!!user}
