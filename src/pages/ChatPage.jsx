@@ -724,16 +724,18 @@ Always format your entire response in Markdown - no exceptions. Make it visually
       {/* Header (hidden on mobile when sidebar is open) */}
       {!sidebarOpen && (
         <header className="fixed md:left-72 md:w-[calc(100%-18rem)] lg:left-72 lg:w-[calc(100%-18rem)] xl:left-80 xl:w-[calc(100%-20rem)] left-0 right-0 top-0 h-14 bg-white border-b z-40">
-          <div className="max-w-5xl mx-auto w-full h-full relative">
+          <div className="max-w-5xl mx-auto w-full h-full relative px-2 sm:px-4">
             <button
               type="button"
-              className="md:hidden absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur px-3 py-2 rounded shadow"
+              className="md:hidden absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur px-2 sm:px-3 py-2 rounded shadow text-sm"
               onClick={() => setSidebarOpen(true)}
             >
               <FaBars />
             </button>
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center pointer-events-none">
-              <div className="text-lg font-semibold">Gemini Chatbot</div>
+              <div className="text-base sm:text-lg font-semibold px-12 sm:px-0 truncate">
+                Gemini Chatbot
+              </div>
             </div>
             <div className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 items-center text-sm text-slate-500 gap-3">
               {user && (
@@ -774,8 +776,8 @@ Always format your entire response in Markdown - no exceptions. Make it visually
       {/* Main chat box (hidden when sidebar open on mobile) */}
       {!sidebarOpen && (
         <main className="md:pl-72 lg:pl-72 xl:pl-80 pt-14 pr-0">
-          <div className="max-w-5xl mx-auto">
-            <div className="min-h-[calc(100vh-14px-80px)] bg-white shadow-md rounded-md overflow-hidden mt-6">
+          <div className="max-w-5xl mx-auto px-2 sm:px-4">
+            <div className="min-h-[calc(100vh-14px-80px)] bg-white shadow-md rounded-none sm:rounded-md overflow-hidden mt-0 sm:mt-6">
               <ChatBox
                 messages={chats[current]?.messages || []}
                 loading={loading}

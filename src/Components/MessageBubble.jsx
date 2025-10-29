@@ -42,17 +42,25 @@ export default function MessageBubble({
   }, [isUser, text, isTyping, currentIndex, onTypingComplete]);
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-6`}>
+    <div
+      className={`flex ${
+        isUser ? "justify-end" : "justify-start"
+      } mb-4 sm:mb-6 px-2 sm:px-0`}
+    >
       <div
         className={`flex ${
           isUser ? "flex-row-reverse" : "flex-row"
-        } max-w-[85%] lg:max-w-[70%]`}
+        } max-w-[95%] sm:max-w-[85%] lg:max-w-[70%]`}
       >
         {/* Avatar */}
-        <div className={`flex-shrink-0 ${isUser ? "ml-3" : "mr-3"}`}>
+        <div
+          className={`flex-shrink-0 ${
+            isUser ? "ml-2 sm:ml-3" : "mr-2 sm:mr-3"
+          }`}
+        >
           <div
             className={`
-            w-8 h-8 rounded-full flex items-center justify-center text-white text-sm
+            w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs sm:text-sm
             ${isUser ? "bg-blue-600" : "bg-green-600"}
           `}
           >
@@ -63,7 +71,7 @@ export default function MessageBubble({
         {/* Message Content */}
         <div
           className={`
-          rounded-2xl px-4 py-3 shadow-sm relative
+          rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm relative overflow-hidden
           ${
             isUser
               ? "bg-blue-600 text-white rounded-br-md"
@@ -117,13 +125,13 @@ export default function MessageBubble({
           )}
 
           {/* Message Text */}
-          <div className="message-content">
+          <div className="message-content break-words overflow-hidden">
             {isUser ? (
-              <div className="whitespace-pre-wrap text-white leading-relaxed">
+              <div className="whitespace-pre-wrap text-white leading-relaxed text-sm sm:text-base">
                 {text}
               </div>
             ) : (
-              <div className="text-gray-800 leading-relaxed">
+              <div className="text-gray-800 leading-relaxed text-sm sm:text-base">
                 <MarkdownRenderer
                   content={displayText}
                   isTyping={isTyping && currentIndex < text.length}

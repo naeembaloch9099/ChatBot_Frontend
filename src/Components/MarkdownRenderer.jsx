@@ -52,7 +52,28 @@ const CodeBlock = ({ language, value }) => {
 
 const MarkdownRenderer = ({ content, isTyping = false }) => {
   return (
-    <div className={`max-w-none ${isTyping ? "opacity-75" : ""}`}>
+    <div className={`max-w-none break-words ${isTyping ? "opacity-75" : ""}`}>
+      <style>{`
+        /* Make KaTeX math responsive */
+        .katex-display {
+          overflow-x: auto;
+          overflow-y: hidden;
+          -webkit-overflow-scrolling: touch;
+          padding: 0.5rem 0;
+        }
+        .katex {
+          font-size: 1em;
+          white-space: normal;
+        }
+        @media (max-width: 640px) {
+          .katex {
+            font-size: 0.9em;
+          }
+          .katex-display {
+            font-size: 0.85em;
+          }
+        }
+      `}</style>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
@@ -108,7 +129,7 @@ const MarkdownRenderer = ({ content, isTyping = false }) => {
           // Headings
           h1({ children }) {
             return (
-              <h1 className="text-2xl font-bold text-gray-900 mt-6 mb-4 border-b border-gray-200 pb-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mt-6 mb-4 border-b border-gray-200 pb-2 break-words">
                 {children}
               </h1>
             );
@@ -116,7 +137,7 @@ const MarkdownRenderer = ({ content, isTyping = false }) => {
 
           h2({ children }) {
             return (
-              <h2 className="text-xl font-semibold text-gray-900 mt-5 mb-3">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mt-5 mb-3 break-words">
                 {children}
               </h2>
             );
@@ -124,7 +145,7 @@ const MarkdownRenderer = ({ content, isTyping = false }) => {
 
           h3({ children }) {
             return (
-              <h3 className="text-lg font-semibold text-gray-900 mt-4 mb-2">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mt-4 mb-2 break-words">
                 {children}
               </h3>
             );
@@ -154,7 +175,7 @@ const MarkdownRenderer = ({ content, isTyping = false }) => {
           // Paragraphs - use div to avoid HTML nesting validation errors
           p({ children }) {
             return (
-              <div className="my-3 text-gray-700 leading-relaxed">
+              <div className="my-3 text-gray-700 leading-relaxed break-words overflow-x-auto">
                 {children}
               </div>
             );
