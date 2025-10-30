@@ -34,7 +34,8 @@ export default function Signup() {
         ? ""
         : import.meta.env.VITE_BACKEND_URL || "";
 
-      const response = await fetch(`${BACKEND}/api/auth/google`, {
+      // Use the google-signup endpoint for signup page
+      const response = await fetch(`${BACKEND}/api/auth/google-signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -48,6 +49,8 @@ export default function Signup() {
         if (data.user && data.user.email)
           localStorage.setItem("userEmail", data.user.email);
         localStorage.setItem("userName", data.user.name || "");
+        if (data.user && data.user.picture)
+          localStorage.setItem("userPicture", data.user.picture);
         if (data.accessToken) {
           localStorage.setItem("accessToken", data.accessToken);
         }
@@ -57,16 +60,27 @@ export default function Signup() {
         console.log("[Google Signup] success:", data);
         navigate("/chat");
         showToast({
-          message: "Signed up with Google",
+          message: "Signed up with Google successfully!",
           type: "success",
           duration: 2000,
         });
       } else {
         console.error("[Google Signup] failure:", data);
-        showToast({
-          message: data.error || "Google signup failed",
-          type: "error",
-        });
+
+        // Check if user should login instead
+        if (data.shouldLogin) {
+          showToast({
+            message:
+              data.error || "Email already in use. Please sign in instead.",
+            type: "error",
+            duration: 3000,
+          });
+        } else {
+          showToast({
+            message: data.error || "Google signup failed",
+            type: "error",
+          });
+        }
       }
     } catch (err) {
       console.error("Google signup error:", err);

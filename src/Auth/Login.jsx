@@ -45,10 +45,20 @@ export default function Login() {
         });
       } else {
         console.error("[Google Login] failure:", data);
-        showToast({
-          message: data.error || "Google login failed",
-          type: "error",
-        });
+
+        // Check if user needs to sign up first
+        if (data.needsSignup) {
+          showToast({
+            message: "Please sign up first",
+            type: "error",
+            duration: 3000,
+          });
+        } else {
+          showToast({
+            message: data.error || "Google login failed",
+            type: "error",
+          });
+        }
       }
     } catch (err) {
       console.error("Google login error:", err);
