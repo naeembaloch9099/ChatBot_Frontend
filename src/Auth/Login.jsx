@@ -28,6 +28,8 @@ export default function Login() {
         if (data.user && data.user.email)
           localStorage.setItem("userEmail", data.user.email);
         localStorage.setItem("userName", data.user.name || "");
+        if (data.user && data.user.picture)
+          localStorage.setItem("userPicture", data.user.picture);
         if (data.accessToken) {
           localStorage.setItem("accessToken", data.accessToken);
         }

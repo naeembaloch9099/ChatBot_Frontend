@@ -302,3 +302,42 @@ export async function checkAuthStatus() {
     return { authenticated: false };
   }
 }
+
+export async function updateProfile(formData) {
+  const BACKEND = resolveBackend();
+  try {
+    const res = await authenticatedFetch(`${BACKEND}/api/auth/profile`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      credentials: "include",
+      body: formData,
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      return { ok: false, error: data.error || "Failed to update profile" };
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("[api client] updateProfile error:", err);
+    return { ok: false, error: "Network error" };
+  }
+}
+
+export async function deleteAccount() {
+  const BACKEND = resolveBackend();
+  try {
+    const res = await authenticatedFetch(`${BACKEND}/api/auth/account`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      return { ok: false, error: data.error || "Failed to delete account" };
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("[api client] deleteAccount error:", err);
+    return { ok: false, error: "Network error" };
+  }
+}

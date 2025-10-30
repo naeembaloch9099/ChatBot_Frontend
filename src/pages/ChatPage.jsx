@@ -4,6 +4,7 @@ import { FaBars } from "react-icons/fa";
 import ChatList from "../Components/ChatList";
 import ChatBox from "../Components/ChatBox";
 import ChatInput from "../Components/Chatinput";
+import UserProfileMenu from "../Components/UserProfileMenu";
 import {
   getGeminiResponse,
   saveMessage,
@@ -25,7 +26,8 @@ export default function ChatPage() {
   const [user, setUser] = useState(() => {
     const name = localStorage.getItem("userName");
     const email = localStorage.getItem("userEmail");
-    return name ? { name, email } : null;
+    const picture = localStorage.getItem("userPicture");
+    return name ? { name, email, picture } : null;
   });
   const [chats, setChats] = useState([]);
   const [current, setCurrent] = useState(0);
@@ -46,16 +48,27 @@ export default function ChatPage() {
       if (
         e.key === "userName" ||
         e.key === "userEmail" ||
+        e.key === "userPicture" ||
         e.key === "isAuthenticated"
       ) {
         const name = localStorage.getItem("userName");
         const email = localStorage.getItem("userEmail");
-        setUser(name ? { name, email } : null);
+        const picture = localStorage.getItem("userPicture");
+        setUser(name ? { name, email, picture } : null);
       }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+
+  // Handler for profile updates from UserProfileMenu
+  const handleProfileUpdate = (updatedUser) => {
+    setUser((prev) => ({
+      ...prev,
+      name: updatedUser.name,
+      picture: updatedUser.profilePicture,
+    }));
+  };
 
   // Load chats and verify authentication on component mount
   useEffect(() => {
@@ -856,37 +869,53 @@ Always format your entire response in Markdown - no exceptions. Make it visually
                 Gemini Chatbot
               </div>
             </div>
+            {/* Mobile profile menu */}
+            {user && (
+              <div className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 pointer-events-auto">
+                <UserProfileMenu
+                  user={user}
+                  onProfileUpdate={handleProfileUpdate}
+                />
+              </div>
+            )}
             <div className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 items-center text-sm text-slate-500 gap-3">
               {user && (
-                <button
-                  title={
-                    temporaryNoSave
-                      ? "Temporary mode: ON (chats won't be saved)"
-                      : "Temporary mode: OFF"
-                  }
-                  className="px-2 py-1 rounded bg-white/0 hover:bg-gray-100 text-sm"
-                  onClick={async () => {
-                    const next = !temporaryNoSave;
-                    setTemporaryNoSave(next);
-                    try {
-                      localStorage.setItem("noSave", next ? "true" : "false");
-                    } catch {
-                      // ignore storage errors
+                <>
+                  <button
+                    title={
+                      temporaryNoSave
+                        ? "Temporary mode: ON (chats won't be saved)"
+                        : "Temporary mode: OFF"
                     }
-                    if (!next) {
-                      // just turned OFF -> flush unsaved chats to server
-                      await flushTemporaryChats();
-                    }
-                  }}
-                >
-                  {temporaryNoSave ? (
-                    <span className="text-sky-600">Temporary: ON</span>
-                  ) : (
-                    <span>Temporary: OFF</span>
-                  )}
-                </button>
+                    className="px-2 py-1 rounded bg-white/0 hover:bg-gray-100 text-sm"
+                    onClick={async () => {
+                      const next = !temporaryNoSave;
+                      setTemporaryNoSave(next);
+                      try {
+                        localStorage.setItem("noSave", next ? "true" : "false");
+                      } catch {
+                        // ignore storage errors
+                      }
+                      if (!next) {
+                        // just turned OFF -> flush unsaved chats to server
+                        await flushTemporaryChats();
+                      }
+                    }}
+                  >
+                    {temporaryNoSave ? (
+                      <span className="text-sky-600">Temporary: ON</span>
+                    ) : (
+                      <span>Temporary: OFF</span>
+                    )}
+                  </button>
+                  <div>Model: Gemini</div>
+                  <UserProfileMenu
+                    user={user}
+                    onProfileUpdate={handleProfileUpdate}
+                  />
+                </>
               )}
-              <div>Model: Gemini</div>
+              {!user && <div>Model: Gemini</div>}
             </div>
           </div>
         </header>
