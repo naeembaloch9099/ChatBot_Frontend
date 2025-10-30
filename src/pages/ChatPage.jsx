@@ -4,7 +4,6 @@ import { FaBars } from "react-icons/fa";
 import ChatList from "../Components/ChatList";
 import ChatBox from "../Components/ChatBox";
 import ChatInput from "../Components/Chatinput";
-import UserProfileMenu from "../Components/UserProfileMenu";
 import {
   getGeminiResponse,
   saveMessage,
@@ -871,15 +870,6 @@ Always format your entire response in Markdown - no exceptions. Make it visually
                 Gemini Chatbot
               </div>
             </div>
-            {/* Mobile profile menu */}
-            {user && (
-              <div className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 pointer-events-auto">
-                <UserProfileMenu
-                  user={user}
-                  onProfileUpdate={handleProfileUpdate}
-                />
-              </div>
-            )}
             <div className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 items-center text-sm text-slate-500 gap-3">
               {user && (
                 <>
@@ -911,10 +901,6 @@ Always format your entire response in Markdown - no exceptions. Make it visually
                     )}
                   </button>
                   <div>Model: Gemini</div>
-                  <UserProfileMenu
-                    user={user}
-                    onProfileUpdate={handleProfileUpdate}
-                  />
                 </>
               )}
               {!user && <div>Model: Gemini</div>}
