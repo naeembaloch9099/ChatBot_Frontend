@@ -1,11 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  <!-- Homepage - Highest Priority -->
   <url>
     <loc>https://chat-bot-frontend-eight-gray.vercel.app/</loc>
     <lastmod>2025-10-30</lastmod>
-    <changefreq>weekly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+  
+  <!-- Blog - High Priority for SEO Content -->
+  <url>
+    <loc>https://chat-bot-frontend-eight-gray.vercel.app/blog.html</loc>
+    <lastmod>2025-10-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- Chat Page - Main App Feature -->
+  <url>
+    <loc>https://chat-bot-frontend-eight-gray.vercel.app/chat</loc>
+    <lastmod>2025-10-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- Authentication Pages -->
   <url>
     <loc>https://chat-bot-frontend-eight-gray.vercel.app/login</loc>
     <lastmod>2025-10-30</lastmod>
@@ -18,22 +41,18 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  <url>
-    <loc>https://chat-bot-frontend-eight-gray.vercel.app/chat</loc>
-    <lastmod>2025-10-30</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
+  
+  <!-- Legal Pages -->
   <url>
     <loc>https://chat-bot-frontend-eight-gray.vercel.app/privacy.html</loc>
     <lastmod>2025-10-30</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://chat-bot-frontend-eight-gray.vercel.app/terms.html</loc>
     <lastmod>2025-10-30</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
 </urlset>
