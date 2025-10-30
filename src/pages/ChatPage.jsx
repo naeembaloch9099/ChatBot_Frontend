@@ -819,6 +819,7 @@ Always format your entire response in Markdown - no exceptions. Make it visually
             setSidebarOpen(false);
           }}
           user={user}
+          onProfileUpdate={handleProfileUpdate}
         />
       </div>
 
@@ -843,6 +844,7 @@ Always format your entire response in Markdown - no exceptions. Make it visually
                 setSidebarOpen(false);
               }}
               user={user}
+              onProfileUpdate={handleProfileUpdate}
               onRequestClose={() => setSidebarOpen(false)}
             />
           </div>

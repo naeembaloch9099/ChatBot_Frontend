@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FaPlus, FaRobot } from "react-icons/fa";
-import { showToast } from "../Services/Toast";
+import UserProfileMenu from "./UserProfileMenu";
 
 export default function ChatList({
   chats = [],
@@ -12,6 +12,7 @@ export default function ChatList({
   onDelete = () => {},
   user = null,
   onRequestClose = null,
+  onProfileUpdate = () => {},
 }) {
   const [search, setSearch] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
@@ -20,8 +21,6 @@ export default function ChatList({
   const [confirmDelete, setConfirmDelete] = useState(null);
   const menuRef = useRef(null);
   const menuPortalRef = useRef(null);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileRef = useRef(null);
 
   // Close menus on outside click or Esc
   useEffect(() => {
@@ -33,9 +32,6 @@ export default function ChatList({
 
       if (!clickedInsideMenuButton && !clickedInsideMenuPortal)
         setOpenMenu(null);
-
-      if (profileRef.current && !profileRef.current.contains(e.target))
-        setProfileOpen(false);
     };
 
     const onKey = (e) => {
@@ -43,7 +39,6 @@ export default function ChatList({
         setOpenMenu(null);
         setEditing(null);
         setConfirmDelete(null);
-        setProfileOpen(false);
       }
     };
 
@@ -248,76 +243,42 @@ export default function ChatList({
       {/* FOOTER */}
       <div className="mt-auto px-3 py-4 border-t border-white/10 bg-[#0f1724]">
         {user ? (
-          <ProfileFooter
-            user={user}
-            open={profileOpen}
-            setOpen={setProfileOpen}
-            refProp={profileRef}
-          />
+          <div className="flex items-center gap-3">
+            {/* User Avatar and Info */}
+            <div className="flex-1 flex items-center gap-3 min-w-0">
+              {user.picture ? (
+                <img
+                  src={user.picture}
+                  alt={user.name}
+                  className="h-9 w-9 rounded-full object-cover border-2 border-white/20"
+                />
+              ) : (
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                  {(user.name || "U").slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1 text-sm min-w-0">
+                <div className="font-medium text-white truncate">
+                  {user.name}
+                </div>
+                <div className="text-xs text-slate-300/70 truncate">
+                  {user.email}
+                </div>
+              </div>
+            </div>
+            {/* Profile Menu */}
+            <div className="flex-shrink-0">
+              <UserProfileMenu
+                user={user}
+                onProfileUpdate={onProfileUpdate}
+                variant="sidebar"
+              />
+            </div>
+          </div>
         ) : (
           <div className="text-sm text-slate-300/70">Not signed in</div>
         )}
       </div>
-    </div>
-  );
-}
-
-function ProfileFooter({ user, open, setOpen, refProp }) {
-  const toggle = (e) => {
-    e?.stopPropagation();
-    setOpen((s) => !s);
-  };
-
-  const doLogout = async () => {
-    try {
-      const BACKEND = import.meta.env.VITE_BACKEND_URL || "";
-      await fetch(`${BACKEND}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      }).catch(() => null);
-    } catch (e) {
-      console.warn("Logout error:", e);
-    }
-
-    showToast({ message: "Logged out", type: "success", duration: 1800 });
-    localStorage.clear();
-    window.location.href = "/";
-  };
-
-  return (
-    <div className="relative">
-      <div className="flex items-center gap-3">
-        <div className="h-9 w-9 rounded-full bg-indigo-500 flex items-center justify-center text-white">
-          {(user.name || "U").slice(0, 2).toUpperCase()}
-        </div>
-        <div className="flex-1 text-sm">
-          <div className="font-medium">{user.name}</div>
-          <div className="text-xs text-slate-300/70 truncate">{user.email}</div>
-        </div>
-        <button
-          className="px-2 py-1 text-sm text-slate-300/80"
-          onClick={toggle}
-        >
-          ⋯
-        </button>
-      </div>
-
-      {open && (
-        <div
-          ref={refProp}
-          className="absolute left-0 bottom-12 w-44 bg-white text-black rounded shadow-lg ring-1 ring-black/10 z-50"
-        >
-          <button className="w-full text-left px-3 py-2 hover:bg-gray-100">
-            Help
-          </button>
-          <button
-            className="w-full text-left px-3 py-2 hover:bg-gray-100"
-            onClick={doLogout}
-          >
-            Logout
-          </button>
-        </div>
-      )}
     </div>
   );
 }
