@@ -49,6 +49,39 @@ export default function UserProfileMenu({
     setName(user?.name || "");
   }, [user]);
 
+  // Handle ESC key to close modals
+  useEffect(() => {
+    function handleEscKey(event) {
+      if (event.key === "Escape") {
+        if (showDeleteConfirm) {
+          setShowDeleteConfirm(false);
+        } else if (showSettings) {
+          setShowSettings(false);
+          setImageFile(null);
+          setImagePreview(null);
+          setName(user?.name || "");
+        } else if (menuOpen) {
+          setMenuOpen(false);
+        }
+      }
+    }
+
+    if (showSettings || showDeleteConfirm || menuOpen) {
+      document.addEventListener("keydown", handleEscKey);
+      return () => document.removeEventListener("keydown", handleEscKey);
+    }
+  }, [showSettings, showDeleteConfirm, menuOpen, user?.name]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (showSettings || showDeleteConfirm) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "unset";
+      };
+    }
+  }, [showSettings, showDeleteConfirm]);
+
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -250,8 +283,32 @@ export default function UserProfileMenu({
   // Render settings modal function
   function renderSettingsModal() {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={(e) => {
+          // Close modal when clicking on backdrop
+          if (e.target === e.currentTarget) {
+            setShowSettings(false);
+            setImageFile(null);
+            setImagePreview(null);
+            setName(user?.name || "");
+          }
+        }}
+        onKeyDown={(e) => {
+          // Close modal when pressing ESC
+          if (e.key === "Escape") {
+            setShowSettings(false);
+            setImageFile(null);
+            setImagePreview(null);
+            setName(user?.name || "");
+          }
+        }}
+        tabIndex={-1}
+      >
+        <div
+          className="bg-white rounded-lg shadow-xl max-w-md w-full"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold">Profile Settings</h2>
           </div>
@@ -363,8 +420,26 @@ export default function UserProfileMenu({
   // Render delete confirmation modal
   function renderDeleteConfirmModal() {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={(e) => {
+          // Close modal when clicking on backdrop
+          if (e.target === e.currentTarget) {
+            setShowDeleteConfirm(false);
+          }
+        }}
+        onKeyDown={(e) => {
+          // Close modal when pressing ESC
+          if (e.key === "Escape") {
+            setShowDeleteConfirm(false);
+          }
+        }}
+        tabIndex={-1}
+      >
+        <div
+          className="bg-white rounded-lg shadow-xl max-w-md w-full"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-red-600">
               Delete Account
