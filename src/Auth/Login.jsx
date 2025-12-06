@@ -3,11 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { showToast } from "../Services/Toast";
 import { GoogleLogin } from "@react-oauth/google";
 import { fetchWithFallback } from "../Services/Api";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
@@ -155,15 +157,39 @@ export default function Login() {
               className="w-full px-4 py-3 border rounded-xl"
               placeholder="Email"
             />
-            <input
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border rounded-xl"
-              placeholder="Password"
-              type="password"
-            />
-            <button className="w-full py-3 bg-sky-600 text-white rounded-xl">
+            <div>
+              <div className="relative">
+                <input
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 pr-12 border rounded-xl"
+                  placeholder="Password"
+                  type={showPassword ? "text" : "password"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <FaEyeSlash className="w-5 h-5" />
+                  ) : (
+                    <FaEye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              <div className="text-right mt-2">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-sky-600 hover:text-sky-700 font-medium"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
+            </div>
+            <button className="w-full py-3 bg-sky-600 text-white rounded-xl hover:bg-sky-700 transition">
               Log in
             </button>
           </form>

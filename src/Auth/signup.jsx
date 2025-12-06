@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { FaGoogle } from "react-icons/fa";
+import { FaGoogle, FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { showToast } from "../Services/Toast";
 import { GoogleLogin } from "@react-oauth/google";
@@ -15,6 +15,8 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState(""); // actual otp stored in state (server would store it)
@@ -347,16 +349,30 @@ export default function Signup() {
                   )}
                 </div>
                 <div>
-                  <input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-xl ${
-                      fieldErrors.password ? "border-red-500" : ""
-                    }`}
-                    type="password"
-                    placeholder="Password"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className={`w-full px-4 py-3 pr-12 border rounded-xl ${
+                        fieldErrors.password ? "border-red-500" : ""
+                      }`}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? (
+                        <FaEyeSlash className="w-5 h-5" />
+                      ) : (
+                        <FaEye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                   {fieldErrors.password && (
                     <div className="text-red-600 text-sm mt-1">
                       {fieldErrors.password}
@@ -364,16 +380,30 @@ export default function Signup() {
                   )}
                 </div>
                 <div>
-                  <input
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-xl ${
-                      fieldErrors.confirm ? "border-red-500" : ""
-                    }`}
-                    type="password"
-                    placeholder="Confirm password"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      className={`w-full px-4 py-3 pr-12 border rounded-xl ${
+                        fieldErrors.confirm ? "border-red-500" : ""
+                      }`}
+                      type={showConfirm ? "text" : "password"}
+                      placeholder="Confirm password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(!showConfirm)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showConfirm ? (
+                        <FaEyeSlash className="w-5 h-5" />
+                      ) : (
+                        <FaEye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                   {fieldErrors.confirm && (
                     <div className="text-red-600 text-sm mt-1">
                       {fieldErrors.confirm}

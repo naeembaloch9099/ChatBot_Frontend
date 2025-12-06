@@ -5,6 +5,7 @@ import ChatPage from "./pages/ChatPage";
 import LandingWithChat from "./pages/LandingWithChat";
 import Login from "./Auth/Login";
 import Signup from "./Auth/signup";
+import ForgotPassword from "./Auth/ForgotPassword";
 
 function ProtectedRoute({ children }) {
   const isAuth = localStorage.getItem("isAuthenticated") === "1";
@@ -22,6 +23,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route
           path="/chat"
           element={
