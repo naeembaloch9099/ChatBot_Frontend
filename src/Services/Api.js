@@ -1,32 +1,37 @@
 // services/Api.js
-// Helper to resolve backend base URL. If VITE_BACKEND_URL points to localhost
-// but the app is being accessed from another device (window.location.hostname),
-// rewrite the hostname so API calls target the server machine instead of the
-// client's localhost (which would be the phone/tablet).
-function resolveBackend() {
-  const envUrl = import.meta.env.VITE_BACKEND_URL ?? null;
-  let backend =
-    envUrl ?? "https://chatbotserver-production-6d4b.up.railway.app";
+// Backend URLs to try in order
+const BACKEND_URLS = [
+  "http://localhost:8080",
+  "https://chatbotserver-production-6d4b.up.railway.app",
+];
 
-  if (envUrl && typeof window !== "undefined") {
+// Helper function to try fetch with fallback to multiple backends
+async function fetchWithFallback(endpoint, options = {}) {
+  const errors = [];
+
+  for (const backend of BACKEND_URLS) {
     try {
-      const parsed = new URL(envUrl);
-      const isLocalhost = ["localhost", "127.0.0.1"].includes(parsed.hostname);
-      const hostIsRemote = !["localhost", "127.0.0.1"].includes(
-        window.location.hostname
-      );
-      if (isLocalhost && hostIsRemote) {
-        // replace localhost with the current client host (your PC's LAN IP when
-        // you're accessing from a phone). Keep the original port.
-        parsed.hostname = window.location.hostname;
-        // strip trailing slash
-        backend = parsed.toString().replace(/\/$/, "");
-      }
-    } catch {
-      // if parsing fails, just fall back to the original value
+      console.log(`[API] Trying ${backend}${endpoint}`);
+      const response = await fetch(`${backend}${endpoint}`, {
+        ...options,
+        credentials: "include",
+      });
+
+      // If request succeeded, return the response
+      console.log(`[API] Success with ${backend}`);
+      return response;
+    } catch (error) {
+      console.warn(`[API] Failed with ${backend}:`, error.message);
+      errors.push({ backend, error: error.message });
+      // Continue to next backend
     }
   }
-  return backend;
+
+  // All backends failed
+  console.error("[API] All backends failed:", errors);
+  throw new Error(
+    "Network error: Unable to connect to server. Please check your connection."
+  );
 }
 
 // Helper to get auth headers with token
@@ -41,7 +46,6 @@ function getAuthHeaders(additionalHeaders = {}) {
 
 // Helper to refresh the access token
 async function refreshAccessToken() {
-  const BACKEND = resolveBackend();
   const refreshToken = localStorage.getItem("refreshToken");
 
   if (!refreshToken) {
@@ -50,10 +54,9 @@ async function refreshAccessToken() {
   }
 
   try {
-    const res = await fetch(`${BACKEND}/api/auth/refresh`, {
+    const res = await fetchWithFallback("/api/auth/refresh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ refreshToken }),
     });
 
@@ -79,51 +82,51 @@ async function refreshAccessToken() {
   }
 }
 
-// Helper to make authenticated fetch with auto token refresh
-async function authenticatedFetch(url, options = {}) {
-  let res = await fetch(url, options);
+// Helper to make authenticated fetch with auto token refresh and fallback
+async function authenticatedFetch(endpoint, options = {}) {
+  try {
+    let res = await fetchWithFallback(endpoint, options);
 
-  // If 401, try to refresh token and retry once
-  if (res.status === 401) {
-    console.log("[api client] Got 401, attempting to refresh token...");
-    const refreshed = await refreshAccessToken();
+    // If 401, try to refresh token and retry once
+    if (res.status === 401) {
+      console.log("[api client] Got 401, attempting to refresh token...");
+      const refreshed = await refreshAccessToken();
 
-    if (refreshed) {
-      // Update headers with new token and retry
-      const newHeaders = {
-        ...options.headers,
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      };
-      res = await fetch(url, { ...options, headers: newHeaders });
-    } else {
-      // Refresh failed, redirect to login
-      console.log("[api client] Token refresh failed, redirecting to login");
-      window.location.href = "/";
+      if (refreshed) {
+        // Update headers with new token and retry
+        const newHeaders = {
+          ...options.headers,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        };
+        res = await fetchWithFallback(endpoint, {
+          ...options,
+          headers: newHeaders,
+        });
+      } else {
+        // Refresh failed, redirect to login
+        console.log("[api client] Token refresh failed, redirecting to login");
+        window.location.href = "/";
+      }
     }
-  }
 
-  return res;
+    return res;
+  } catch (error) {
+    // Re-throw with user-friendly message
+    throw new Error(error.message || "Network error");
+  }
 }
 
 export async function getGeminiResponse({ systemPrompt, conversation }) {
-  // Use a relative URL in dev so Vite dev-server middleware/proxy handles /api/* routes
-  // resolveBackend() will rewrite localhost to the current LAN host when needed.
-  const BACKEND = resolveBackend();
-  console.log(
-    "[api client] Forwarding prompt to backend",
-    BACKEND || "(relative) /api/gemini"
-  );
-  const res = await authenticatedFetch(`${BACKEND}/api/gemini`, {
+  console.log("[api client] Forwarding prompt to backend");
+  const res = await authenticatedFetch("/api/gemini", {
     method: "POST",
     headers: getAuthHeaders({ "Content-Type": "application/json" }),
-    credentials: "include",
     body: JSON.stringify({ systemPrompt, conversation }),
   });
 
   const data = await res.json();
   if (!res.ok) {
     console.error("[api client] backend error body:", data);
-    // Ensure we throw a readable error message, not [object Object]
     const errPayload = data?.error ?? data;
     const msg =
       typeof errPayload === "string" ? errPayload : JSON.stringify(errPayload);
@@ -133,13 +136,11 @@ export async function getGeminiResponse({ systemPrompt, conversation }) {
 }
 
 export async function saveMessage(message) {
-  const BACKEND = resolveBackend();
   try {
     const headers = getAuthHeaders({ "Content-Type": "application/json" });
-    const res = await authenticatedFetch(`${BACKEND}/api/messages`, {
+    const res = await authenticatedFetch("/api/messages", {
       method: "POST",
       headers,
-      credentials: "include",
       body: JSON.stringify(message),
     });
     if (!res.ok) {
@@ -155,36 +156,28 @@ export async function saveMessage(message) {
 }
 
 export async function getMessages({ chatId, limit = 100 } = {}) {
-  const BACKEND = resolveBackend();
   const params = new URLSearchParams();
   if (chatId) params.set("chatId", chatId);
   params.set("limit", String(limit));
-  const res = await authenticatedFetch(
-    `${BACKEND}/api/messages?${params.toString()}`,
-    {
-      headers: getAuthHeaders(),
-      credentials: "include",
-    }
-  );
+  const res = await authenticatedFetch(`/api/messages?${params.toString()}`, {
+    headers: getAuthHeaders(),
+  });
   if (!res.ok) throw new Error("Failed to fetch messages");
   return res.json();
 }
 
 export async function getLatestMessageForChat(chatId) {
-  const BACKEND = resolveBackend();
-  const res = await fetch(
-    `${BACKEND}/api/messages/latest/${encodeURIComponent(chatId)}`,
-    { credentials: "include" }
+  const res = await fetchWithFallback(
+    `/api/messages/latest/${encodeURIComponent(chatId)}`,
+    {}
   );
   if (!res.ok) throw new Error("Failed to fetch latest message");
   return res.json();
 }
 
 export async function getChats() {
-  const BACKEND = resolveBackend();
-  const res = await authenticatedFetch(`${BACKEND}/api/chats`, {
+  const res = await authenticatedFetch("/api/chats", {
     headers: getAuthHeaders(),
-    credentials: "include",
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
@@ -195,16 +188,14 @@ export async function getChats() {
 }
 
 export async function askWithFiles({ question, files = [] } = {}) {
-  const BACKEND = resolveBackend();
   const fd = new FormData();
   fd.append("question", question || "");
   for (const f of files) {
     fd.append("files", f, f.name);
   }
-  const res = await authenticatedFetch(`${BACKEND}/api/ask-with-files`, {
+  const res = await authenticatedFetch("/api/ask-with-files", {
     method: "POST",
-    headers: getAuthHeaders(), // Don't set Content-Type for FormData
-    credentials: "include",
+    headers: getAuthHeaders(),
     body: fd,
   });
   const data = await res.json();
@@ -216,13 +207,11 @@ export async function askWithFiles({ question, files = [] } = {}) {
 }
 
 export async function createChat({ title } = {}) {
-  const BACKEND = resolveBackend();
   try {
     const headers = getAuthHeaders({ "Content-Type": "application/json" });
-    const res = await authenticatedFetch(`${BACKEND}/api/chats`, {
+    const res = await authenticatedFetch("/api/chats", {
       method: "POST",
       headers,
-      credentials: "include",
       body: JSON.stringify({ title }),
     });
     if (!res.ok) {
@@ -238,14 +227,12 @@ export async function createChat({ title } = {}) {
 }
 
 export async function deleteChat(chatId) {
-  const BACKEND = resolveBackend();
   try {
     const res = await authenticatedFetch(
-      `${BACKEND}/api/chats/${encodeURIComponent(chatId)}`,
+      `/api/chats/${encodeURIComponent(chatId)}`,
       {
         method: "DELETE",
         headers: getAuthHeaders(),
-        credentials: "include",
       }
     );
     if (!res.ok) {
@@ -261,15 +248,13 @@ export async function deleteChat(chatId) {
 }
 
 export async function updateChat(chatId, { title } = {}) {
-  const BACKEND = resolveBackend();
   try {
     const headers = getAuthHeaders({ "Content-Type": "application/json" });
     const res = await authenticatedFetch(
-      `${BACKEND}/api/chats/${encodeURIComponent(chatId)}`,
+      `/api/chats/${encodeURIComponent(chatId)}`,
       {
         method: "PATCH",
         headers,
-        credentials: "include",
         body: JSON.stringify({ title }),
       }
     );
@@ -286,11 +271,9 @@ export async function updateChat(chatId, { title } = {}) {
 }
 
 export async function checkAuthStatus() {
-  const BACKEND = resolveBackend();
   try {
-    const res = await authenticatedFetch(`${BACKEND}/api/auth/me`, {
+    const res = await authenticatedFetch("/api/auth/me", {
       headers: getAuthHeaders(),
-      credentials: "include",
     });
     if (!res.ok) {
       return { authenticated: false };
@@ -304,12 +287,10 @@ export async function checkAuthStatus() {
 }
 
 export async function updateProfile(formData) {
-  const BACKEND = resolveBackend();
   try {
-    const res = await authenticatedFetch(`${BACKEND}/api/auth/profile`, {
+    const res = await authenticatedFetch("/api/auth/profile", {
       method: "PUT",
       headers: getAuthHeaders(),
-      credentials: "include",
       body: formData,
     });
     if (!res.ok) {
@@ -319,17 +300,15 @@ export async function updateProfile(formData) {
     return await res.json();
   } catch (err) {
     console.error("[api client] updateProfile error:", err);
-    return { ok: false, error: "Network error" };
+    return { ok: false, error: err.message || "Network error" };
   }
 }
 
 export async function deleteAccount() {
-  const BACKEND = resolveBackend();
   try {
-    const res = await authenticatedFetch(`${BACKEND}/api/auth/account`, {
+    const res = await authenticatedFetch("/api/auth/account", {
       method: "DELETE",
       headers: getAuthHeaders(),
-      credentials: "include",
     });
     if (!res.ok) {
       const data = await res.json();
@@ -338,6 +317,9 @@ export async function deleteAccount() {
     return await res.json();
   } catch (err) {
     console.error("[api client] deleteAccount error:", err);
-    return { ok: false, error: "Network error" };
+    return { ok: false, error: err.message || "Network error" };
   }
 }
+
+// Export helper for direct auth calls (used in Login/Signup components)
+export { fetchWithFallback };

@@ -90,7 +90,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "https://chatbotserver-production-6d4b.up.railway.app/", // local backend server
+        target: "http://localhost:8080", // local backend server (Railway: https://chatbotserver-production-6d4b.up.railway.app/)
         changeOrigin: true,
         secure: false,
       },

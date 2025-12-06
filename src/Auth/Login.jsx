@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { showToast } from "../Services/Toast";
 import { GoogleLogin } from "@react-oauth/google";
+import { fetchWithFallback } from "../Services/Api";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,14 +11,9 @@ export default function Login() {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const BACKEND = import.meta.env.DEV
-        ? ""
-        : import.meta.env.VITE_BACKEND_URL || "";
-
-      const response = await fetch(`${BACKEND}/api/auth/google`, {
+      const response = await fetchWithFallback("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ credential: credentialResponse.credential }),
       });
 
@@ -79,13 +75,9 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const BACKEND = import.meta.env.DEV
-      ? ""
-      : import.meta.env.VITE_BACKEND_URL || "";
-    fetch(`${BACKEND}/api/auth/login`, {
+    fetchWithFallback("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ email, password }),
     })
       .then(async (r) => {

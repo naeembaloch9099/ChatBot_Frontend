@@ -3,6 +3,7 @@ import { FaGoogle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { showToast } from "../Services/Toast";
 import { GoogleLogin } from "@react-oauth/google";
+import { fetchWithFallback } from "../Services/Api";
 
 // Simple client-side OTP signup flow (simulation).
 // On submit: generate OTP, "send" it (console.log) and show OTP input.
@@ -30,15 +31,10 @@ export default function Signup() {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const BACKEND = import.meta.env.DEV
-        ? ""
-        : import.meta.env.VITE_BACKEND_URL || "";
-
       // Use the google-signup endpoint for signup page
-      const response = await fetch(`${BACKEND}/api/auth/google-signup`, {
+      const response = await fetchWithFallback("/api/auth/google-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ credential: credentialResponse.credential }),
       });
 
@@ -122,14 +118,9 @@ export default function Signup() {
   }, [resendTimer]);
 
   const generateAndSendOtp = (toEmail) => {
-    // call backend to request OTP (use relative path in dev so Vite proxy handles it)
-    const BACKEND = import.meta.env.DEV
-      ? ""
-      : import.meta.env.VITE_BACKEND_URL || "";
-    fetch(`${BACKEND}/api/auth/send-otp`, {
+    fetchWithFallback("/api/auth/send-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ name, email, password }),
     })
       .then(async (r) => {
@@ -248,14 +239,9 @@ export default function Signup() {
   const handleVerifyOtp = (e) => {
     e.preventDefault();
     setError("");
-    const BACKEND = import.meta.env.DEV
-      ? ""
-      : import.meta.env.VITE_BACKEND_URL ||
-        "https://chatbotserver-production-6d4b.up.railway.app";
-    fetch(`${BACKEND}/api/auth/verify-otp`, {
+    fetchWithFallback("/api/auth/verify-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ email, code: inputOtp }),
     })
       .then(async (r) => {
